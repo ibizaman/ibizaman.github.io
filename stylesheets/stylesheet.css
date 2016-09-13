@@ -250,6 +250,18 @@ a {
   text-shadow: 0 0 5px rgba(104, 182, 255, 0.5);
 }
 
+.a-hover {
+  color: #b5e853;
+  text-shadow: 0;
+  text-decoration: none;
+}
+
+.a-hover:hover {
+  color: #63c0f5;
+  text-shadow: 0 0 5px rgba(104, 182, 255, 0.5);
+  text-decoration: underline;
+}
+
 /* Clearfix */
 
 .cf:before, .cf:after {
