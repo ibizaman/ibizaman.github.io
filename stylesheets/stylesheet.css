@@ -21,8 +21,14 @@ section {
   margin: 0 0 20px 0;
 }
 
+footer {
+  margin-top: 50px;
+  border-top: 1px dashed #b5e853;
+  -webkit-font-smoothing: antialiased;
+}
+
 h1, h2, h3, h4, h5, h6 {
-  margin: 0 0 20px;
+  margin: 2em 0 20px;
 }
 
 li {
@@ -149,18 +155,27 @@ blockquote {
   border-left: 1px dotted #666;
 }
 
+.code {
+  color: #ff9800;
+}
+
 pre {
+  color: #ff9800;
   background: rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 10px;
-  font-size: 14px;
-  color: #b5e853;
   border-radius: 2px;
-  -moz-border-radius: 2px;
-  -webkit-border-radius: 2px;
   text-wrap: normal;
   overflow: auto;
   overflow-y: hidden;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+pre .comment {
+  color: #d0d0d0;
+  background: #00005f;
 }
 
 table {
