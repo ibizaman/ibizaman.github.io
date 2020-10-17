@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>My Hakyll Blog - Setup a Hakyll Blog with Nix</title>
+        <link rel="stylesheet" href="../css/default.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">My Hakyll Blog</a>
+            </div>
+            <nav>
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Setup a Hakyll Blog with Nix</h1>
+            <article>
+    <section class="header">
+        Posted on October 15, 2020
+        
+    </section>
+    <section>
+        <p>This blog post explains how to setup this site. You can find the source code on <a href="https://github.com/ibizaman/blog">Github</a>.</p>
+<p>The stack we’ll be using is <a href="https://jaspervdj.be/hakyll/">Hakyll</a> on top of <a href="https://www.haskell.org/">Haskell</a> and <a href="https://nixos.org/">Nix</a>. I use <a href="https://www.gnu.org/software/emacs/">Emacs</a> as my editor so there will be some later blog posts explaining how to set that up.</p>
+<p>Nix is the starting point and for learning Nix, I recommend the <a href="https://nixos.org/guides/nix-pills/index.html">Nix pills</a>. I thought I could simply find example snippets online and learn from that but the language and the conventions were too alien for me to understand anything.</p>
+<p>I followed <a href="https://robertwpearce.com/hakyll-pt-6-pure-builds-with-nix.html">this blog post</a> from Robert Pearce to set things up. I removed the <code>niv</code> part as I am not using it.</p>
+<p>There was an encoding bug as my files are using UTF-8 but by default Hakyll only understands ASCII encoding. To solve that one, I followed <a href="https://www.slamecka.cz/posts/2020-06-08-encoding-issues-with-nix-hakyll/">this blog post</a> from Ondřej Slámečka. There is a fix in the <a href="https://jaspervdj.be/hakyll/tutorials/faq.html#hgetcontents-invalid-argument-or-commitbuffer-invalid-argument">Hakyll’s FAQ</a>, but the post from Ondřej is tailored for nix so I followed that one.</p>
+<p>I recommend reading both blog posts as they explain things well. That said, here is my version.</p>
+<h1 id="initial-nix-files">Initial Nix Files</h1>
+<p>Corresponds to <a href="https://github.com/ibizaman/blog/commit/b4200e564d8464f6783a38a14e8be059ef28b425">this commit</a>.</p>
+<p>There are 3 nix files to create, then we will use hakyll to generate the base site.</p>
+<h2 id="default.nix"><code>./default.nix</code></h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">(</span><span class="ex">import</span> ./release.nix { }<span class="kw">)</span><span class="ex">.project</span></span></code></pre></div>
+<h2 id="shell.nix"><code>./shell.nix</code></h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">(</span><span class="ex">import</span> ./release.nix { }<span class="kw">)</span><span class="ex">.shell</span></span></code></pre></div>
+<h2 id="release.nix"><code>./release.nix</code></h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="co"># https://robertwpearce.com/hakyll-pt-6-pure-builds-with-nix.html</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">{</span> <span class="ex">compiler</span> ? <span class="st">&quot;ghc883&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>, <span class="ex">pkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {<span class="kw">}</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>}:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>  <span class="ex">inherit</span> (pkgs.lib.trivial) <span class="ex">flip</span> pipe<span class="kw">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>  <span class="ex">inherit</span> (pkgs.haskell.lib) <span class="ex">appendPatch</span> appendConfigureFlags<span class="kw">;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>  <span class="ex">haskellPackages</span> = pkgs.haskell.packages.<span class="va">${compiler}</span>.override {</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>    <span class="ex">overrides</span> = hpNew: hpOld: {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>      <span class="ex">hakyll</span> =</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>        <span class="ex">pipe</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a>           <span class="ex">hpOld.hakyll</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a>           [ <span class="kw">(</span><span class="ex">flip</span> appendPatch ./hakyll.patch<span class="kw">)</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a>             <span class="kw">(</span><span class="ex">flip</span> appendConfigureFlags [ <span class="st">&quot;-f&quot;</span> <span class="st">&quot;watchServer&quot;</span> <span class="st">&quot;-f&quot;</span> <span class="st">&quot;previewServer&quot;</span> ]<span class="kw">)</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a>           ];</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a>      <span class="co"># https://www.slamecka.cz/posts/2020-06-08-encoding-issues-with-nix-hakyll/</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a>      <span class="ex">hakyll-blog</span> = (hpNew.callCabal2nix <span class="st">&quot;blog&quot;</span> ./. { })<span class="ex">.overrideAttrs</span> (old: {</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a>        <span class="ex">nativeBuildInputs</span> = old.nativeBuildInputs or [] ++ [</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a>          <span class="ex">pkgs.makeWrapper</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a>        ];</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a>        <span class="ex">postInstall</span> = old.postInstall or <span class="st">&quot;&quot;</span> + <span class="st">''</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a>        <span class="ex">wrapProgram</span> <span class="va">$out</span>/bin/site <span class="kw">\</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a>          <span class="ex">--set</span> LANG <span class="st">&quot;en_US.UTF-8&quot;</span> <span class="kw">\</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a>          <span class="ex">--set</span> LOCALE_ARCHIVE <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true"></a>        <span class="st">''</span>;</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true"></a>      });</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true"></a>    };</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true"></a>  };</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true"></a>  <span class="ex">project</span> = haskellPackages.hakyll-blog<span class="kw">;</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true"></a><span class="kw">in</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true"></a><span class="kw">{</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true"></a>  <span class="ex">project</span> = project<span class="kw">;</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true"></a></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true"></a>  <span class="ex">shell</span> = haskellPackages.shellFor {</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true"></a>    <span class="ex">packages</span> = p: with p<span class="kw">;</span><span class="bu"> [</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true"></a>      project</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true"></a>    ];</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true"></a>    buildInputs <span class="ot">=</span> with haskellPackages; [</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true"></a>      ghcid</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true"></a>      ghcide</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true"></a>      brittany</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true"></a>      hlint</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true"></a>    ];</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true"></a>    withHoogle <span class="ot">=</span> true;</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true"></a>  };</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true"></a>}</span></code></pre></div>
+<p>The first two files are using the <code>release.nix</code> one so let’s dive into that one.</p>
+<p>First, we set some defaults and import some functions:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">{</span> <span class="ex">compiler</span> ? <span class="st">&quot;ghc883&quot;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>, <span class="ex">pkgs</span> ? import <span class="op">&lt;</span>nixpkgs<span class="op">&gt;</span> {<span class="kw">}</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>}:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="bu">let</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>  <span class="ex">inherit</span> (pkgs.lib.trivial) <span class="ex">flip</span> pipe<span class="kw">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>  <span class="ex">inherit</span> (pkgs.haskell.lib) <span class="ex">appendPatch</span> appendConfigureFlags<span class="kw">;</span></span></code></pre></div>
+<p>Then we set some overrides:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ex">haskellPackages</span> = pkgs.haskell.packages.<span class="va">${compiler}</span>.override {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="ex">overrides</span> = hpNew: hpOld: {</span></code></pre></div>
+<p>First, for Hakyll, we configure it with <code>watchServer</code> and <code>previewServer</code> options. Both options are super useful when developing as the produced executable will watch for file changes and rebuild the blog post when needed.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">hakyll</span> =</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="ex">pipe</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>     <span class="ex">hpOld.hakyll</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>     [ <span class="kw">(</span><span class="ex">flip</span> appendPatch ./hakyll.patch<span class="kw">)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>       <span class="kw">(</span><span class="ex">flip</span> appendConfigureFlags [ <span class="st">&quot;-f&quot;</span> <span class="st">&quot;watchServer&quot;</span> <span class="st">&quot;-f&quot;</span> <span class="st">&quot;previewServer&quot;</span> ]<span class="kw">)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>     ];</span></code></pre></div>
+<p>Second, we create a variable <code>hakyll-blog</code> to compile the blog. The name <code>"blog"</code> is the name I will use later when generating the Hakyll site. It must correspond to the <code>executable site</code> line in the generated cabal file. (This will be generated later). We also set some flags to make Hakyll able to read UTF-8 files.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ex">hakyll-blog</span> = (hpNew.callCabal2nix <span class="st">&quot;blog&quot;</span> ./. { })<span class="ex">.overrideAttrs</span> (old: {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>  <span class="ex">nativeBuildInputs</span> = old.nativeBuildInputs or [] ++ [</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>    <span class="ex">pkgs.makeWrapper</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>  ];</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a>  <span class="ex">postInstall</span> = old.postInstall or <span class="st">&quot;&quot;</span> + <span class="st">''</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a>  <span class="ex">wrapProgram</span> <span class="va">$out</span>/bin/site <span class="kw">\</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a>    <span class="ex">--set</span> LANG <span class="st">&quot;en_US.UTF-8&quot;</span> <span class="kw">\</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a>    <span class="ex">--set</span> LOCALE_ARCHIVE <span class="st">&quot;</span><span class="va">${pkgs</span><span class="er">.glibcLocales</span><span class="va">}</span><span class="st">/lib/locale/locale-archive&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a>  <span class="st">''</span>;</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a>});</span></code></pre></div>
+<p>We then set the <code>project</code> variable used in the <code>default.nix</code> file:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>  <span class="ex">project</span> = haskellPackages.hakyll-blog<span class="kw">;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">in</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="kw">{</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  <span class="ex">project</span> = project<span class="kw">;</span></span></code></pre></div>
+<p>Finally, we set the shell and provide some packages useful for editors, namely <code>ghcide</code>, <code>brittany</code>, <code>hlint</code> and a local <code>hoogle</code> with <code>withHoogle</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ex">shell</span> = haskellPackages.shellFor {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  <span class="ex">packages</span> = p: with p<span class="kw">;</span><span class="bu"> [</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    project</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a>  ];</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a>  buildInputs <span class="ot">=</span> with haskellPackages; [</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a>    ghcid</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a>    ghcide</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a>    brittany</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a>    hlint</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true"></a>  ];</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true"></a>  withHoogle <span class="ot">=</span> true;</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>};</span></code></pre></div>
+<h1 id="generate-the-initial-template-blog">Generate the Initial Template Blog</h1>
+<p>Corresponds to <a href="https://github.com/ibizaman/blog/commit/990cea6051a978ca407ff2ed3921d7deb3652e5c">this commit</a>.</p>
+<p>We still need one more empty <code>haskyll.patch</code> which is empty for now.</p>
+<p>This will take some time because we will run Nix for the first time on our blog. It will fetch and compile everything needed. It took roughly 1 hour on my laptop.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>$ <span class="ex">nix-shell</span> --pure -p haskellPackages.hakyll --run <span class="st">&quot;hakyll-init .&quot;</span></span></code></pre></div>
+<p>You get a bunch of files and 4 example blog posts under <code>posts/</code>.</p>
+<p>Then, we can build the blog executable:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>$ <span class="ex">nix-build</span> --show-trace</span></code></pre></div>
+<p>Finally, we can run the executable. It will compile all 4 example blog posts:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ex">./result/bin/site</span> watch</span></code></pre></div>
+<p>Your blog will be up and running at <a href="http://localhost:8000">http://localhost:8000</a>.</p>
+<p>You can change posts, and or remove then, change the css and other files and the <code>site</code> executable will see those changes and rebuild the site. You just need to reload the site in your browser.</p>
+<h1 id="gitignore">Gitignore</h1>
+<p>Corresponds to <a href="https://github.com/ibizaman/blog/commit/731642ddf603bf348a50450055558ca3b57e469d">this commit</a>.</p>
+<p>I can’t live with temporary and generated files like that. Let’s add a <code>.gitignore</code>:</p>
+<pre><code>*#
+*~
+_cache/
+_site/
+result</code></pre>
+<p>The first two lines are for emacs temporary files, you could omit them.</p>
+<h1 id="your-first-post">Your First Post</h1>
+<p>This will different for you but I just deleted all 4 example blog posts and <a href="https://github.com/ibizaman/blog/commit/b8f97be67e44bb811524d7235414f8d8899281d5">wrote another post</a>.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>That’s it, we created our blog with Hakyll and Nix and we can see it locally. Next up, let’s publish it.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </footer>
+    </body>
+</html>
