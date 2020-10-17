@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>ibizaman's Blog - Deploy the Blog to Github Pages</title>
+        <title>ibizaman's Blog - Deploy the Blog to GitHub Pages</title>
         <link rel="stylesheet" href="../css/default.css" />
         <link rel="stylesheet" href="../css/syntax.css" />
     </head>
@@ -22,20 +22,20 @@
         </header>
 
         <main role="main">
-            <h1>Deploy the Blog to Github Pages</h1>
+            <h1>Deploy the Blog to GitHub Pages</h1>
             <article>
     <section class="header">
         Posted on October 16, 2020
         
     </section>
     <section>
-        <p>I’m using Github Pages because it is integrated in Github and it is pretty simple to use. There are ways to use Github CI to deploy to Github Pages but I will set that up when I feel tired of this manual method.</p>
-<p>The manual method requires two repositories: one that holds the source code, the other that holds the generated static files. The easiest way to handle this is to use a git submodule. (I say easiest but I still spent a few hours setting this up correctly…)</p>
-<p>In my case, the repo holding the static files is https://github.com/ibizaman/ibizaman.github.io and the one holding the source code is https://github.com/ibizaman/blog. In the latter, we will create a submodule pointing to the former.</p>
+        <p>I want to use GitHub Pages because it is integrated with GitHub and it is pretty simple to use. We could try to use GitHub CI to deploy to GitHub Pages but I do not want to deal with this complexity just yet.</p>
+<p>The method I will use for now is manual and requires two repositories: one that holds the source code and the other the generated static files. The easiest way to handle this is to use a git submodule. (I say easiest but I still spent a few hours setting this up correctly…)</p>
+<p>In my case, the repository holding the static files is https://github.com/ibizaman/ibizaman.github.io and the one holding the source code is https://github.com/ibizaman/blog. In the latter, we will create a submodule pointing to the former.</p>
 <h1 id="setup-a-deploy-command">Setup a Deploy Command</h1>
-<p>In essence, we need to build the site and copy the resulting files in the submodule’s path. We then commit and push the submodule to its repo.</p>
+<p>In essence, we need to build the site and copy the resulting files to the submodule’s path. We then commit and push the submodule to its repository.</p>
 <p>I tried first to simply use the <code>_site/</code> directory, output of the Hakyll build, as the submodule. The issue is the <code>./result/bin/site rebuild</code> command completely wipes the <code>_site/</code>, including the submodule’s <code>.git</code> directory. This puts the submodule in a bad state.</p>
-<p>Next solution is to generate the files in <code>_site/</code> then copy them to the submodule’s directory. Usually, that’s where I start putting commands in a <code>Makefile</code> so I don’t forget how to handle this. But actually, Hakyll allows you to run a custom command when running <code>./result/bin/site deploy</code>. This is configured in <code>Site.hs</code>. We will use that as our self-contained Makefile. Documentation can be found on <a href="https://jaspervdj.be/hakyll/reference/Hakyll-Core-Configuration.html#t:Configuration">Hackage</a>.</p>
+<p>Next solution is to generate the files in <code>_site/</code> then copy them to the submodule’s directory. Usually, that’s where I start putting commands in a <code>Makefile</code> so I don’t forget how to handle this. But actually, Hakyll allows you to run a custom command when running <code>./result/bin/site deploy</code>. This is configured in <code>Site.hs</code>. We will use that as a self-contained Makefile. Documentation can be found on <a href="https://jaspervdj.be/hakyll/reference/Hakyll-Core-Configuration.html#t:Configuration">Hackage</a>.</p>
 <p>In <code>Site.hs</code>, we change:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>main <span class="ot">=</span> hakyll <span class="op">$</span> <span class="kw">do</span></span></code></pre></div>
@@ -54,7 +54,7 @@
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>$ <span class="ex">./result/bin/site</span> deploy</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>$ <span class="kw">(</span><span class="bu">cd</span> ibizaman.github.io <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> tag TAG <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push<span class="kw">)</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>$ <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p>I’m sure I will get annoyed to run these commands at some point but for now, it’s good enough.</p>
+<p>I’m sure I will get annoyed of running these commands at some point in the future but for now, it’s good enough.</p>
     </section>
 </article>
 

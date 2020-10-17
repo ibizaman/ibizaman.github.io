@@ -29,11 +29,11 @@
         
     </section>
     <section>
-        <p>This blog post explains how to setup this site. You can find the source code on <a href="https://github.com/ibizaman/blog">Github</a>.</p>
+        <p>This blog post explains how to setup this site. You can find the source code on <a href="https://github.com/ibizaman/blog">GitHub</a>. We will not publish yet, it will be all local. Publishing is for the following post.</p>
 <p>The stack we’ll be using is <a href="https://jaspervdj.be/hakyll/">Hakyll</a> on top of <a href="https://www.haskell.org/">Haskell</a> and <a href="https://nixos.org/">Nix</a>. I use <a href="https://www.gnu.org/software/emacs/">Emacs</a> as my editor so there will be some later blog posts explaining how to set that up.</p>
-<p>Nix is the starting point and for learning Nix, I recommend the <a href="https://nixos.org/guides/nix-pills/index.html">Nix pills</a>. I thought I could simply find example snippets online and learn from that but the language and the conventions were too alien for me to understand anything.</p>
+<p>Nix is where we will start and for learning Nix, I recommend the <a href="https://nixos.org/guides/nix-pills/index.html">Nix pills</a>. I thought I could simply find example snippets online and learn from that but the language and the conventions were too alien for me to understand anything.</p>
 <p>I followed <a href="https://robertwpearce.com/hakyll-pt-6-pure-builds-with-nix.html">this blog post</a> from Robert Pearce to set things up. I removed the <code>niv</code> part as I am not using it.</p>
-<p>There was an encoding bug as my files are using UTF-8 but by default Hakyll only understands ASCII encoding. To solve that one, I followed <a href="https://www.slamecka.cz/posts/2020-06-08-encoding-issues-with-nix-hakyll/">this blog post</a> from Ondřej Slámečka. There is a fix in the <a href="https://jaspervdj.be/hakyll/tutorials/faq.html#hgetcontents-invalid-argument-or-commitbuffer-invalid-argument">Hakyll’s FAQ</a>, but the post from Ondřej is tailored for nix so I followed that one.</p>
+<p>There was an encoding bug as I’m using UTF-8 but by default Hakyll only understands ASCII encoding. To solve that one, I followed <a href="https://www.slamecka.cz/posts/2020-06-08-encoding-issues-with-nix-hakyll/">this blog post</a> from Ondřej Slámečka. There is a fix in the <a href="https://jaspervdj.be/hakyll/tutorials/faq.html#hgetcontents-invalid-argument-or-commitbuffer-invalid-argument">Hakyll’s FAQ</a>, but the post from Ondřej is tailored for nix so I followed it.</p>
 <p>I recommend reading both blog posts as they explain things well. That said, here is my version.</p>
 <h1 id="initial-nix-files">Initial Nix Files</h1>
 <p>Corresponds to <a href="https://github.com/ibizaman/blog/commit/b4200e564d8464f6783a38a14e8be059ef28b425">this commit</a>.</p>
@@ -105,14 +105,14 @@
 <p>Then we set some overrides:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ex">haskellPackages</span> = pkgs.haskell.packages.<span class="va">${compiler}</span>.override {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a>  <span class="ex">overrides</span> = hpNew: hpOld: {</span></code></pre></div>
-<p>First, for Hakyll, we configure it with <code>watchServer</code> and <code>previewServer</code> options. Both options are super useful when developing as the produced executable will watch for file changes and rebuild the blog post when needed.</p>
+<p>First, for Hakyll, we configure it with <code>watchServer</code> and <code>previewServer</code> options. Both options are super useful when developing as the produced <code>./result/bin/site</code> executable will watch for file changes and rebuild the blog post when needed.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ex">hakyll</span> =</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  <span class="ex">pipe</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>     <span class="ex">hpOld.hakyll</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>     [ <span class="kw">(</span><span class="ex">flip</span> appendPatch ./hakyll.patch<span class="kw">)</span></span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>       <span class="kw">(</span><span class="ex">flip</span> appendConfigureFlags [ <span class="st">&quot;-f&quot;</span> <span class="st">&quot;watchServer&quot;</span> <span class="st">&quot;-f&quot;</span> <span class="st">&quot;previewServer&quot;</span> ]<span class="kw">)</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>     ];</span></code></pre></div>
-<p>Second, we create a variable <code>hakyll-blog</code> to compile the blog. The name <code>"blog"</code> is the name I will use later when generating the Hakyll site. It must correspond to the <code>executable site</code> line in the generated cabal file. (This will be generated later). We also set some flags to make Hakyll able to read UTF-8 files.</p>
+<p>Second, we create a variable <code>hakyll-blog</code> to compile the blog. The name <code>"blog"</code> must correspond to the <code>executable &lt;NAME&gt;</code> line in the generated cabal file, which we will generate later. We also set some flags to make Hakyll able to read UTF-8 files.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="ex">hakyll-blog</span> = (hpNew.callCabal2nix <span class="st">&quot;blog&quot;</span> ./. { })<span class="ex">.overrideAttrs</span> (old: {</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>  <span class="ex">nativeBuildInputs</span> = old.nativeBuildInputs or [] ++ [</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>    <span class="ex">pkgs.makeWrapper</span></span>
@@ -128,7 +128,7 @@
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">in</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="kw">{</span></span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a>  <span class="ex">project</span> = project<span class="kw">;</span></span></code></pre></div>
-<p>Finally, we set the shell and provide some packages useful for editors, namely <code>ghcide</code>, <code>brittany</code>, <code>hlint</code> and a local <code>hoogle</code> with <code>withHoogle</code>:</p>
+<p>Finally, we set the <code>shell</code> variable and provide some packages useful for editors, namely <code>ghcide</code>, <code>brittany</code>, <code>hlint</code> and a local <code>hoogle</code> with <code>withHoogle</code>:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode nix"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ex">shell</span> = haskellPackages.shellFor {</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  <span class="ex">packages</span> = p: with p<span class="kw">;</span><span class="bu"> [</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a>    project</span>
@@ -143,14 +143,17 @@
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true"></a>};</span></code></pre></div>
 <h1 id="generate-the-initial-template-blog">Generate the Initial Template Blog</h1>
 <p>Corresponds to <a href="https://github.com/ibizaman/blog/commit/990cea6051a978ca407ff2ed3921d7deb3652e5c">this commit</a>.</p>
-<p>We still need one more empty <code>haskyll.patch</code> which is empty for now.</p>
-<p>This will take some time because we will run Nix for the first time on our blog. It will fetch and compile everything needed. It took roughly 1 hour on my laptop.</p>
+<p>Create an empty <code>hakyll.patch</code> file. We will not use it but it’s nice to have it if you want to patch Hakyll.</p>
+<p>Next step will take some time because we will run Nix for the first time. It will fetch and compile every dependencies. It took roughly 1 hour on my laptop.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>$ <span class="ex">nix-shell</span> --pure -p haskellPackages.hakyll --run <span class="st">&quot;hakyll-init .&quot;</span></span></code></pre></div>
-<p>You get a bunch of files and 4 example blog posts under <code>posts/</code>.</p>
-<p>Then, we can build the blog executable:</p>
+<p>You get a bunch of files and 4 example blog posts under the <code>posts/</code> directory.</p>
+<p>Then, we can build the <code>./result/bin/site</code> blog executable:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>$ <span class="ex">nix-build</span> --show-trace</span></code></pre></div>
-<p>Finally, we can run the executable. It will compile all 4 example blog posts:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ex">./result/bin/site</span> watch</span></code></pre></div>
+<p>Finally, we can run the executable to compile the site, including all 4 example blog posts:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ex">./result/bin/site</span> build</span></code></pre></div>
+<p>This will create the <code>_cache</code> and <code>_site</code> directories. The latter is where the generated files will be located.</p>
+<h1 id="serve-and-watch-for-changes">Serve and Watch For Changes</h1>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="ex">./result/bin/site</span> watch</span></code></pre></div>
 <p>Your blog will be up and running at <a href="http://localhost:8000">http://localhost:8000</a>.</p>
 <p>You can change posts, and or remove then, change the css and other files and the <code>site</code> executable will see those changes and rebuild the site. You just need to reload the site in your browser.</p>
 <h1 id="gitignore">Gitignore</h1>
@@ -161,9 +164,9 @@
 _cache/
 _site/
 result</code></pre>
-<p>The first two lines are for emacs temporary files, you could omit them.</p>
+<p>The first two lines are for Emacs’ temporary files, you could omit them.</p>
 <h1 id="your-first-post">Your First Post</h1>
-<p>This will different for you but I just deleted all 4 example blog posts and <a href="https://github.com/ibizaman/blog/commit/b8f97be67e44bb811524d7235414f8d8899281d5">wrote another post</a>.</p>
+<p>I just deleted all 4 example blog posts and <a href="https://github.com/ibizaman/blog/commit/b8f97be67e44bb811524d7235414f8d8899281d5">created another file</a>.</p>
 <h1 id="conclusion">Conclusion</h1>
 <p>That’s it, we created our blog with Hakyll and Nix and we can see it locally. Next up, let’s publish it.</p>
     </section>
