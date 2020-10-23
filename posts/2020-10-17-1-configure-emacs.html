@@ -17,6 +17,7 @@
                 <a href="../">Home</a>
                 <a href="../about.html">About</a>
                 <a href="../contact.html">Contact</a>
+                <a href="../tags.html">Tags</a>
                 <a href="../archive.html">Archive</a>
             </nav>
         </header>
@@ -28,6 +29,11 @@
         Posted on October 17, 2020
         
     </section>
+	<section class="tags">
+	  
+	  Tags: <a title="All pages tagged 'hakyll'." href="../tags/hakyll.html">hakyll</a>, <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'nix'." href="../tags/nix.html">nix</a>, <a title="All pages tagged 'emacs'." href="../tags/emacs.html">emacs</a>, <a title="All pages tagged 'lsp'." href="../tags/lsp.html">lsp</a>
+	  
+	</section>
     <section>
         <p>We need to make Emacs support Haskell through Nix. It will use <a href="https://microsoft.github.io/language-server-protocol/">LSP</a> through <a href="https://github.com/haskell/ghcide/">Ghcide</a> as basis to parse the source code, <a href="https://www.flycheck.org/en/latest/">Flycheck</a> for live errors in the buffer and format the code through <a href="https://hackage.haskell.org/package/brittany">Brittany</a>. Ghcide and Brittany are installed with <a href="https://nixos.org/">Nix</a>.</p>
 <p>To make Emacs work with Haskell being compiled through Nix, we will use the following packages:</p>
