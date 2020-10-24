@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ibizaman's Blog - Add Tags to a Hakyll Site</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/syntax.css" />
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">ibizaman's Blog</a>
+            </div>
+            <nav>
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../tags.html">Tags</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Add Tags to a Hakyll Site</h1>
+            <article>
+    <section class="header">
+        Posted on October 22, 2020
+        
+    </section>
+	<section class="tags">
+	  
+	  Tags: <a title="All pages tagged 'hakyll'." href="../tags/hakyll.html">hakyll</a>
+	  
+	</section>
+    <section>
+        <p>Let’s add some tags to each blog post. The tags are added in the header section of each post. For example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co">---</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="an">title:</span><span class="co"> Deploy the Blog to GitHub Pages</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="an">tags:</span><span class="co"> hakyll, haskell, nix</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="co">---</span></span></code></pre></div>
+<p>This will produce a blog post with 3 tags. Clicking on a tag will bring you to a page with all blog posts tagged with that tag.</p>
+<p>You can also access to all tags from a special Tags page.</p>
+<p>Let’s set this all up. Everything outlined here can be found in <a href="https://github.com/ibizaman/blog/commit/6ef96feaaeddd3cae4a1e54fe9fde385598e7871">this commit</a>.</p>
+<p>I was heavily inspired by <a href="https://javran.github.io/posts/2014-03-01-add-tags-to-your-hakyll-blog.html">this blog post</a> by Javran but I diverged in the way I wanted the tags to be shown. I also added a Tags page.</p>
+<h1 id="show-tags-in-post">Show Tags in Post</h1>
+<p>First, let’s show the tags on each post page. This will be the result:</p>
+<p><img src="../images/tags-post.png" /></p>
+<p>We first need to add a section to <code>templates/post.html</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="kw">&lt;section</span><span class="ot"> class=</span><span class="st">&quot;tags&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  $if(tags)$</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  Tags: $tags$</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>  $endif$</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="kw">&lt;/section&gt;</span></span></code></pre></div>
+<p>Note that the <code>$if()$</code> clause only checks if a field exists. So the <code>Tags:</code> line will be printed also if the <code>$tags$</code> field is empty.</p>
+<p>We then need to update <code>site.hs</code> to populate the <code>$tags$</code> field:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>main = hakyllWith conf $ do</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>  -- [...]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="va">+  tags &lt;- buildTags &quot;posts/*&quot; (fromCapture &quot;tags/*.html&quot;)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a><span class="va">+  let postCtxWithTags = postCtx tags</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true"></a>  -- [...]</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true"></a>   match &quot;posts/*&quot; $ do</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true"></a>     route $ setExtension &quot;html&quot;</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true"></a>     compile</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true"></a>       $   pandocCompiler</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true"></a><span class="st">-      &gt;&gt;= loadAndApplyTemplate &quot;templates/post.html&quot;    postCtx</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true"></a><span class="st">-      &gt;&gt;= loadAndApplyTemplate &quot;templates/default.html&quot; postCtx</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true"></a><span class="va">+      &gt;&gt;= loadAndApplyTemplate &quot;templates/post.html&quot;    postCtxWithTags</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true"></a><span class="va">+      &gt;&gt;= loadAndApplyTemplate &quot;templates/default.html&quot; postCtxWithTags</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true"></a>       &gt;&gt;= relativizeUrls</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true"></a><span class="st">-postCtx :: Context String</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true"></a><span class="st">-postCtx = dateField &quot;date&quot; &quot;%B %e, %Y&quot; `mappend` defaultContext</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true"></a><span class="va">+postCtx :: Tags -&gt; Context String</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true"></a><span class="va">+postCtx tags =</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true"></a><span class="va">+  tagsField &quot;tags&quot; tags</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true"></a><span class="va">+    `mappend` dateField &quot;date&quot; &quot;%B %e, %Y&quot;</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true"></a><span class="va">+    `mappend` defaultContext</span></span></code></pre></div>
+<p>The <code>match "posts/*"</code> block existed already but we changed the <code>postCtx</code> to <code>postCtxWithTags</code>. Actually, we changed all occurrences of <code>postCtx</code> with <code>postCtxWithTags</code>. We also added a <code>"tags"</code> field in the <code>postCtx</code> function.</p>
+<p>Let’s analyze two lines which took me some time to understand.</p>
+<h2 id="build-tags">Build Tags</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="ot">buildTags ::</span> <span class="dt">MonadMetadata</span> m</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>          <span class="ot">=&gt;</span> <span class="dt">Pattern</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>          <span class="ot">-&gt;</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Identifier</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>          <span class="ot">-&gt;</span> m <span class="dt">Tags</span></span></code></pre></div>
+<p>We use it like so:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>buildTags <span class="st">&quot;posts/*&quot;</span> (fromCapture <span class="st">&quot;tags/*.html&quot;</span>)</span></code></pre></div>
+<p>In this case, <code>buildTags</code> will parse each file in the <code>posts/</code> directory and extract all tags in the header. We will later generate an HTML page per tag and that’s when the <code>fromCapture</code> function will be used.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="ot">fromCapture ::</span> <span class="dt">Pattern</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Identifier</span></span></code></pre></div>
+<p><code>Pattern</code> is a simple glob pattern:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>(toFilePath <span class="op">$</span> fromCapture <span class="st">&quot;tags/*.html&quot;</span> <span class="st">&quot;foo&quot;</span>) <span class="op">==</span> <span class="st">&quot;tags/foo.html&quot;</span></span></code></pre></div>
+<h2 id="tags-field">Tags Field</h2>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ot">tagsField ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Tags</span> <span class="ot">-&gt;</span> <span class="dt">Context</span> a</span></code></pre></div>
+<p>We use it like so:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>tagsField <span class="st">&quot;tags&quot;</span> tags</span></code></pre></div>
+<p>This adds a field named <code>"tags"</code> that can be accessed in the template as <code>$tags$</code>. <code>Context a</code> is what the template has access to.</p>
+<p>Here, the default rendering for <code>$tags$</code> (comma separated list of urls) suits us but we will see later how to make something custom.</p>
+<h1 id="tag-page">Tag Page</h1>
+<p>Let’s create an HTML page per tag that will show all posts that has the tag. It will look like this:</p>
+<p><img src="../images/tags-page.png" /></p>
+<p>We create a template for the tag page in <code>templates/tag.html</code>. Here, we can reuse the <code>post-list.html</code> template:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>$partial(&quot;templates/post-list.html&quot;)$</span></code></pre></div>
+<p>In <code>templates/post-list.html</code>, we added the <code>tags</code> div:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a> &lt;ul&gt;</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>     $for(posts)$</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>         &lt;li&gt;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>             &lt;a href=&quot;$url$&quot;&gt;$title$&lt;/a&gt; - $date$</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a><span class="va">+            &lt;div class=&quot;tags&quot;&gt;$tags$&lt;/div&gt;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true"></a>         &lt;/li&gt;</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true"></a>     $endfor$</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true"></a> &lt;/ul&gt;</span></code></pre></div>
+<p>With some accompanying css in <code>css/default.css</code>:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode css"><code class="sourceCode css"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a>article <span class="fu">.tags</span> {</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a>  <span class="kw">font-size</span>: <span class="dv">1.4</span><span class="dt">rem</span><span class="op">;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a>  <span class="kw">font-style</span>: <span class="dv">italic</span><span class="op">;</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a>  <span class="kw">color</span>: <span class="cn">#555</span><span class="op">;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a>}</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a>div<span class="fu">.tags</span> {</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a>  <span class="kw">text-align</span>: <span class="dv">right</span><span class="op">;</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a>}</span></code></pre></div>
+<p>In <code>site.hs</code>, we add a new block to the <code>main</code> function which takes care of generating one HTML page per tag.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a>main <span class="ot">=</span> hakyllWith conf <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a><span class="op">+</span>  tagsRules tags <span class="op">$</span> \tag <span class="kw">pattern</span> <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="op">+</span>    <span class="kw">let</span> title <span class="ot">=</span> <span class="st">&quot;Posts tagged \&quot;&quot;</span> <span class="op">++</span> tag <span class="op">++</span> <span class="st">&quot;\&quot;&quot;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a><span class="op">+</span>    route idRoute</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a><span class="op">+</span>    compile <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true"></a><span class="op">+</span>      posts <span class="ot">&lt;-</span> recentFirst <span class="op">=&lt;&lt;</span> loadAll <span class="kw">pattern</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true"></a><span class="op">+</span>      <span class="kw">let</span> ctx <span class="ot">=</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true"></a><span class="op">+</span>            constField <span class="st">&quot;title&quot;</span> title</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true"></a><span class="op">+</span>              <span class="ot">`mappend`</span> listField <span class="st">&quot;posts&quot;</span> postCtxWithTags (<span class="fu">return</span> posts)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true"></a><span class="op">+</span>              <span class="ot">`mappend`</span> defaultContext</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true"></a><span class="op">+</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true"></a><span class="op">+</span>      makeItem <span class="st">&quot;&quot;</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/tag.html&quot;</span>     ctx</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> ctx</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> relativizeUrls</span></code></pre></div>
+<p>Where <code>tags</code> is the variable we added earlier with the <code>buildTags</code> function.</p>
+<h1 id="page-with-all-tags">Page with all Tags</h1>
+<p>Last piece of the puzzle, let’s add a page with all tags. Clicking on a tag will forward to the corresponding tag page, the ones we created above. It will look like this:</p>
+<p><img src="../images/tags-all-page.png" /></p>
+<p>In <code>site.hs</code>, we add a new block:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a>main <span class="ot">=</span> hakyllWith conf <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a><span class="op">+</span>  create [<span class="st">&quot;tags.html&quot;</span>] <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true"></a><span class="op">+</span>    route idRoute</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true"></a><span class="op">+</span>    compile <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true"></a><span class="op">+</span>      tags' <span class="ot">&lt;-</span> tagsMetadata tags</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true"></a><span class="op">+</span>      <span class="kw">let</span> tagsCtx <span class="ot">=</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true"></a><span class="op">+</span>            listField</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true"></a><span class="op">+</span>                <span class="st">&quot;tags&quot;</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true"></a><span class="op">+</span>                (  field <span class="st">&quot;name&quot;</span>  (<span class="fu">return</span> <span class="op">.</span> tagName <span class="op">.</span> itemBody)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true"></a><span class="op">+</span>                <span class="op">&lt;&gt;</span> field <span class="st">&quot;url&quot;</span>   (<span class="fu">return</span> <span class="op">.</span> tagUrl <span class="op">.</span> itemBody)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true"></a><span class="op">+</span>                <span class="op">&lt;&gt;</span> field <span class="st">&quot;count&quot;</span> (<span class="fu">return</span> <span class="op">.</span> <span class="fu">show</span> <span class="op">.</span> tagCount <span class="op">.</span> itemBody)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true"></a><span class="op">+</span>                )</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true"></a><span class="op">+</span>                (<span class="fu">sequence</span> <span class="op">$</span> <span class="fu">map</span> makeItem <span class="op">$</span> tags')</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true"></a><span class="op">+</span>              <span class="ot">`mappend`</span> defaultContext</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true"></a><span class="op">+</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true"></a><span class="op">+</span>      getResourceBody</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> applyAsTemplate tagsCtx</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> loadAndApplyTemplate <span class="st">&quot;templates/default.html&quot;</span> tagsCtx</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true"></a><span class="op">+</span>        <span class="op">&gt;&gt;=</span> relativizeUrls</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true"></a><span class="op">+</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true"></a><span class="op">+</span><span class="kw">data</span> <span class="dt">TagMetadata</span> <span class="ot">=</span> <span class="dt">TagMetadata</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true"></a><span class="op">+</span>         {<span class="ot"> tagName ::</span> <span class="dt">String</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true"></a><span class="op">+</span>         ,<span class="ot"> tagUrl ::</span> <span class="dt">String</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true"></a><span class="op">+</span>         ,<span class="ot"> tagCount ::</span> <span class="dt">Int</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true"></a><span class="op">+</span>         }</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true"></a><span class="op">+</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true"></a><span class="op">+</span><span class="ot">tagsMetadata ::</span> <span class="dt">Tags</span> <span class="ot">-&gt;</span> <span class="dt">Compiler</span> [<span class="dt">TagMetadata</span>]</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true"></a><span class="op">+</span>tagsMetadata tags <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true"></a><span class="op">+</span>  <span class="kw">let</span> tagsList <span class="ot">=</span> <span class="fu">map</span> <span class="fu">fst</span> <span class="op">$</span> tagsMap tags</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true"></a><span class="op">+</span>  forM (tagsMap tags) <span class="op">$</span> \(tag, ids) <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true"></a><span class="op">+</span>    route' <span class="ot">&lt;-</span> getRoute <span class="op">$</span> tagsMakeId tags tag</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true"></a><span class="op">+</span>    <span class="fu">return</span> <span class="op">$</span> <span class="dt">TagMetadata</span> tag (fromMaybe <span class="st">&quot;/&quot;</span> route') (<span class="fu">length</span> ids)</span></code></pre></div>
+<p>There is a lot going on here, let’s analyze it step by step.</p>
+<h2 id="tags.html-page">Tags.html Page</h2>
+<p>The <code>create</code> function will create the <code>tags.html</code> page. The <code>getResourceBody</code> will load a template html page of the same name. Let’s create it:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="co">---</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a><span class="an">title:</span><span class="co"> Tags</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a><span class="co">---</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a>Here you can find all the tags set on the various posts:</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a><span class="kw">&lt;ul&gt;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true"></a>    $for(tags)$</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true"></a>        <span class="kw">&lt;li&gt;</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true"></a>            <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;$url$&quot;</span><span class="kw">&gt;</span>$name$<span class="kw">&lt;/a&gt;</span> ($count$)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true"></a>        <span class="kw">&lt;/li&gt;</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true"></a>    $endfor$</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true"></a><span class="kw">&lt;/ul&gt;</span></span></code></pre></div>
+<p>It needs a <code>$tags$</code> list whose items contain three fields: the <code>$url$</code> of the tag page, the <code>$name$</code> of the tag and how many posts are tagged with it in <code>$count$</code>.</p>
+<h2 id="tags-metadata">Tags Metadata</h2>
+<p>The <code>tagsMetadata</code> function creates a list of <code>TagMetadata</code> out of the <code>Tags</code>. I copied it from the <a href="http://localhost:49513/file/nix/store/z2sxaiprlxhdmy2b5zwnzwdaamgni2cm-hakyll-4.13.4.0-doc/share/doc/hakyll-4.13.4.0/html/src/Hakyll.Web.Tags.html#renderTags"><code>renderTags</code> source code</a> and only added the use of <code>TagMetadata</code>.</p>
+<p><code>TagMetadata</code> is a helper type I introduced to make passing data to the template’s context explicit.</p>
+<h2 id="tags-context">Tags Context</h2>
+<p><code>tagsCtx</code> is a <code>Context</code> having a <code>$tags$</code> field which is a list. Each item has the <code>$url$</code>, <code>$name$</code> and <code>$count$</code> fields which are needed by the template. Those fields come from the <code>TagMetadata</code> type.</p>
+<h2 id="tags-nav">Tags Nav</h2>
+<p>Finally, we can add a link to the <code>/tags.html</code> page to the nav bar in the <code>templates/default.html</code> file:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a>    &lt;a href=&quot;/contact.html&quot;&gt;Contact&lt;/a&gt;</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a><span class="va">+   &lt;a href=&quot;/tags.html&quot;&gt;Tags&lt;/a&gt;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a>    &lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;</span></code></pre></div>
+<h1 id="conclusion">Conclusion</h1>
+<p>Although that was not straightforward and I ran into a lot of issues while figuring things out, once more Haskell shines because most of the issues were resolved at compile time. The only things I needed to figure out at runtime were related to styling and cosmetics.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+			|
+			Source code on
+			<a href="https://github.com/ibizaman/blog">GitHub</a>
+        </footer>
+    </body>
+</html>
