@@ -35,32 +35,32 @@
 	  
 	</section>
     <section>
-        <p>I want to use GitHub Pages because it is integrated with GitHub and it is pretty simple to use. We could try to use GitHub CI to deploy to GitHub Pages but I do not want to deal with this complexity just yet.</p>
-<p>The method I will use for now is manual and requires two repositories: one that holds the source code and the other the generated static files. The easiest way to handle this is to use a git submodule. (I say easiest but I still spent a few hours setting this up correctly…)</p>
-<p>In my case, the repository holding the static files is https://github.com/ibizaman/ibizaman.github.io and the one holding the source code is https://github.com/ibizaman/blog. In the latter, we will create a submodule pointing to the former.</p>
+        <p>I want to use GitHub Pages because it is a very simple to use static site server and it is readily available when using GitHub. We could try to use GitHub CI to deploy to GitHub Pages but I do not want to deal with this complexity just yet.</p>
+<p>The method I will use for now is manual and requires two repositories: one that holds the source code and the other that holds the generated static files. The easiest way to handle this is to use a git submodule. (I say easiest but I still spent a few hours setting this up correctly…)</p>
+<p>In my case, the repository holding the static files is <a href="https://github.com/ibizaman/ibizaman.github.io">https://github.com/ibizaman/ibizaman.github.io</a> and the one holding the source code is <a href="https://github.com/ibizaman/blog">https://github.com/ibizaman/blog</a>. In the latter, we will create a submodule pointing to the former. In other words, the submodule will be in the repository holding the source code.</p>
 <h1 id="setup-a-deploy-command">Setup a Deploy Command</h1>
 <p>In essence, we need to build the site and copy the resulting files to the submodule’s path. We then commit and push the submodule to its repository.</p>
-<p>I tried first to simply use the <code>_site/</code> directory, output of the Hakyll build, as the submodule. The issue is the <code>./result/bin/site rebuild</code> command completely wipes the <code>_site/</code>, including the submodule’s <code>.git</code> directory. This puts the submodule in a bad state.</p>
-<p>Next solution is to generate the files in <code>_site/</code> then copy them to the submodule’s directory. Usually, that’s where I start putting commands in a <code>Makefile</code> so I don’t forget how to handle this. But actually, Hakyll allows you to run a custom command when running <code>./result/bin/site deploy</code>. This is configured in <code>Site.hs</code>. We will use that as a self-contained Makefile. Documentation can be found on <a href="https://jaspervdj.be/hakyll/reference/Hakyll-Core-Configuration.html#t:Configuration">Hackage</a>.</p>
-<p>In <code>Site.hs</code>, we change:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>main <span class="ot">=</span> hakyll <span class="op">$</span> <span class="kw">do</span></span></code></pre></div>
-<p>To:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">conf ::</span> <span class="dt">Configuration</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>conf <span class="ot">=</span> defaultConfiguration { deployCommand <span class="ot">=</span> <span class="st">&quot;rm -rf ibizaman.github.io/* &amp;&amp; cp -r _site/* ibizaman.github.io&quot;</span> }</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>main <span class="ot">=</span> hakyllWith conf <span class="op">$</span> <span class="kw">do</span></span></code></pre></div>
+<p>I tried first to simply use the <code>_site/</code> directory, output of the <code>./result/bin/site build</code> command, as the submodule. The issue is the <code>./result/bin/site rebuild</code> command completely wipes the <code>_site/</code>, including the submodule’s <code>.git</code> directory. This puts the submodule in a bad state.</p>
+<p>Next solution is to generate the files in <code>_site/</code> then copy them to the submodule’s directory. Usually, that’s where I start putting commands in a <code>Makefile</code> so I don’t forget how to handle this. But actually, Hakyll allows you to run a custom command when running <code>./result/bin/site deploy</code>. This is configured in <code>site.hs</code>. We will use that as a self-contained Makefile. Documentation can be found on <a href="https://jaspervdj.be/hakyll/reference/Hakyll-Core-Configuration.html#t:Configuration">Hackage</a>.</p>
+<p>In <code>site.hs</code>, we change:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="va">+conf :: Configuration</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="va">+conf = defaultConfiguration {</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="va">+    deployCommand = &quot;rm -rf ibizaman.github.io/* &amp;&amp; cp -r _site/* ibizaman.github.io&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="va">+  }</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a> main :: IO ()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="st">-main = hakyll $ do</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a><span class="va">+main = hakyllWith conf $ do</span></span></code></pre></div>
 <p>This is tailored to the names of my repos, of course. It corresponds to <a href="https://github.com/ibizaman/blog/commit/64d0b697c7863c2b6a9aae5552abb937e66cc6c2">this commit</a>.</p>
 <h1 id="actually-deploy">Actually Deploy</h1>
 <p>These are the, arguably manual, steps to deploy this blog:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>$ <span class="ex">nix-build</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>$ <span class="ex">./result/bin/site</span> rebuild</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>$ <span class="ex">./result/bin/site</span> deploy</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>$ <span class="kw">(</span><span class="bu">cd</span> ibizaman.github.io <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> tag TAG <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push<span class="kw">)</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>$ <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p>I’m sure I will get annoyed of running these commands at some point in the future but for now, it’s good enough.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>$ <span class="ex">nix-build</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>$ <span class="ex">./result/bin/site</span> rebuild</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>$ <span class="ex">./result/bin/site</span> deploy</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>$ <span class="kw">(</span><span class="bu">cd</span> ibizaman.github.io <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> tag TAG <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push<span class="kw">)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>$ <span class="fu">git</span> commit -m <span class="st">'MESSAGE'</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<p>You often don’t need to do the first two steps as <code>./result/bin/watch</code> takes care of it.</p>
+<p>I’m sure I will get annoyed of running these commands at some point in the future but it’s good enough for now.</p>
     </section>
 </article>
 

@@ -35,19 +35,19 @@
 	  
 	</section>
     <section>
-        <p>We need to make Emacs support Haskell through Nix. It will use <a href="https://microsoft.github.io/language-server-protocol/">LSP</a> through <a href="https://github.com/haskell/ghcide/">Ghcide</a> as basis to parse the source code, <a href="https://www.flycheck.org/en/latest/">Flycheck</a> for live errors in the buffer and format the code through <a href="https://hackage.haskell.org/package/brittany">Brittany</a>. Ghcide and Brittany are installed with <a href="https://nixos.org/">Nix</a>.</p>
-<p>To make Emacs work with Haskell being compiled through Nix, we will use the following packages:</p>
+        <p>We need to make Emacs find Haskell executables through Nix. It will use <a href="https://microsoft.github.io/language-server-protocol/">LSP</a> with the <a href="https://github.com/haskell/ghcide/">Ghcide</a> LSP server as basis to parse the source code, <a href="https://www.flycheck.org/en/latest/">Flycheck</a> for live errors in the buffer and <a href="https://hackage.haskell.org/package/brittany">Brittany</a> to format the code. Ghcide and Brittany are installed with <a href="https://nixos.org/">Nix</a>.</p>
+<p>To make all this work, we will use the following Emacs packages:</p>
 <ul>
-<li><a href="https://github.com/travisbhartwell/nix-emacs/#nix-sandbox"><code>nix-sandbox</code></a> will provide us with helper functions to get the current project’s nix sandbox.</li>
-<li><a href="https://emacs-lsp.github.io/lsp-mode"><code>lsp-mode</code></a></li>
-<li><a href="https://github.com/emacs-lsp/lsp-ui"><code>lsp-ui</code></a></li>
-<li><a href="https://github.com/tigersoldier/company-lsp"><code>company-lsp</code></a></li>
-<li><a href="https://github.com/emacs-lsp/lsp-haskell"><code>lsp-haskell</code></a></li>
-<li><a href="https://haskell.github.io/haskell-mode"><code>haskell-mode</code></a></li>
-<li><a href="https://www.flycheck.org/"><code>flycheck</code></a></li>
+<li><a href="https://github.com/travisbhartwell/nix-emacs/#nix-sandbox"><code>nix-sandbox</code></a> provides us with helper functions to get the current project’s nix sandbox.</li>
+<li><a href="https://github.com/NixOS/nix-mode"><code>nix-mode</code></a> makes it easy to edix <code>.nix</code> files as well as provides the <code>nix-build</code> function.</li>
+<li><a href="https://emacs-lsp.github.io/lsp-mode"><code>lsp-mode</code></a> handles talking to a LSP server, here Ghcide.</li>
+<li><a href="https://github.com/emacs-lsp/lsp-ui"><code>lsp-ui</code></a> shows LSP actions and various infos.</li>
+<li><a href="https://github.com/tigersoldier/company-lsp"><code>company-lsp</code></a> provides autocompletion based on the LSP server.</li>
+<li><a href="https://github.com/emacs-lsp/lsp-haskell"><code>lsp-haskell</code></a> is used by <code>lsp-mode</code> to talk to Ghcide.</li>
+<li><a href="https://haskell.github.io/haskell-mode"><code>haskell-mode</code></a> provides syntax highlighting, hoogle integration and much more for editing Haskell files.</li>
+<li><a href="https://www.flycheck.org/"><code>flycheck</code></a> provides syntax check highlighting.</li>
 </ul>
-<p>Optionally, I recommend <code>nix-mode</code> to edit Nix files.</p>
-<p>By the way, I’m using <a href="https://github.com/jwiegley/use-package">use-package</a> with <a href="https://github.com/raxod502/straight.el">straight</a>.</p>
+<p>By the way, I’m using <a href="https://github.com/jwiegley/use-package">use-package</a> with <a href="https://github.com/raxod502/straight.el">straight</a> to configure Emacs.</p>
 <p>Finally, to make this work with Emacs running as a daemon, there will be some systemd-fu required.</p>
 <h1 id="emacs-setup">Emacs Setup</h1>
 <h2 id="nix-sandbox-and-helper">Nix Sandbox and Helper</h2>
@@ -60,15 +60,15 @@
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>  :mode <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.nix</span><span class="sc">\\</span><span class="st">'&quot;</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>  :init</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>  (<span class="kw">require</span> 'nix-build))</span></code></pre></div>
-<p><code>nix-sandbox</code> defines <code>nix-current-sandbox</code> which returns the path to <code>shell.nix</code> or if it does not exist to <code>default.nix</code> or <code>nil</code> if none exist. It also defines <code>nix-shell-command</code> which, from the docs:</p>
+<p><code>nix-sandbox</code> defines <code>nix-current-sandbox</code> which returns the path to <code>shell.nix</code> if it exists, or falls back to <code>default.nix</code> if it exists or <code>nil</code> if none exist. It also defines <code>nix-shell-command</code> which, from the docs:</p>
 <blockquote>
 <div class="sourceCode" id="cb2"><pre class="sourceCode commonlisp"><code class="sourceCode commonlisp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>(<span class="kw">defun</span><span class="fu"> nix-shell-command </span>(sandbox &amp;<span class="kw">rest</span> args)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>  <span class="st">&quot;Assemble a command from ARGS that can be executed in the specified SANDBOX.&quot;</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>  ...</span></code></pre></div>
 </blockquote>
-<p>Super useful for running <code>brittany</code> or <code>ghcide</code> inside our Nix environment.</p>
+<p>Super useful for running <code>brittany</code> or <code>ghcide</code> inside our Nix environment. We won’t need to run those manually though.</p>
 <p>Another useful function is <code>nix-compile</code> which interactively asks for a sandbox and a command to run.</p>
-<p>We add <code>nix-mode</code> for its <code>nix-build</code> function. This allows us to build the site executable.</p>
+<p>We add <code>nix-mode</code> mostly for its <code>nix-build</code> function. This allows us to build the site executable from Emacs.</p>
 <h2 id="lsp-mode-lsp-ui-company-lsp">lsp-mode, lsp-ui, company-lsp</h2>
 <p>These are fairly standard configuration whenever you use LSP in Emacs. I reproduce them here for completeness.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode commonlisp"><code class="sourceCode commonlisp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a>(<span class="kw">use-package</span> lsp-mode</span>
@@ -138,7 +138,7 @@
 <span id="cb4-35"><a href="#cb4-35" aria-hidden="true"></a></span>
 <span id="cb4-36"><a href="#cb4-36" aria-hidden="true"></a>  (<span class="kw">setq</span> haskell-hoogle-server-command 'my/haskell-hoogle--server-command</span>
 <span id="cb4-37"><a href="#cb4-37" aria-hidden="true"></a>		haskell-stylish-on-save <span class="kw">t</span>))</span></code></pre></div>
-<p>The advanced configuration is for handling <code>hoogle</code> and <code>brittany</code> inside Nix. In both cases, we use buffer-local variables through the <code>haskell-mode</code> hook and always check if we are in a Nix environment. If we are, then we use <code>nix-sandbox</code>’s helpers to wrap around the <code>hoogle</code> and <code>brittany</code> executables.</p>
+<p>The advanced configuration is for handling <code>hoogle</code> and <code>brittany</code> inside Nix. In both cases, we use buffer-local variables through the <code>haskell-mode</code> hook and always check if we are in a Nix environment. If we are, that is if <code>(nix-current-sandbox)</code> is not <code>nil</code>, then we use <code>nix-sandbox</code>’s helpers to wrap around the <code>hoogle</code> and <code>brittany</code> executables. If not, we directly call <code>hoogle</code> and <code>brittany</code>.</p>
 <p>To search in the local database, we can then use <code>haskell-hoogle-lookup-from-local</code>. On first call, it will start the local server.</p>
 <p><code>brittany</code> will be called every time we save a buffer to format it.</p>
 <h2 id="lsp-haskell">lsp-haskell</h2>
@@ -159,41 +159,62 @@
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true"></a>		(<span class="kw">apply</span> 'nix-shell-command sandbox args)</span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true"></a>	  args))</span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true"></a></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>  <span class="co">;; from https://github.com/travisbhartwell/nix-emacs#flycheck</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>  (<span class="kw">defun</span><span class="fu"> my/nix--flycheck-command-wrapper </span>(command)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>	(if-let ((sandbox (nix-current-sandbox)))</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true"></a>		(<span class="kw">apply</span> 'nix-shell-command (nix-current-sandbox) command)</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true"></a>	  command))</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true"></a>  (<span class="kw">defun</span><span class="fu"> my/nix--flycheck-executable-find </span>(cmd)</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true"></a>	(if-let ((sandbox (nix-current-sandbox)))</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true"></a>		(nix-executable-find (nix-current-sandbox) cmd)</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true"></a>	  (flycheck-default-executable-find cmd)))</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true"></a></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true"></a>  (<span class="kw">setq</span> lsp-haskell-process-path-hie <span class="st">&quot;ghcide&quot;</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true"></a>		lsp-haskell-process-args-hie '()</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true"></a>		lsp-haskell-process-wrapper-function 'my/nix--lsp-haskell-wrapper</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true"></a>		flycheck-command-wrapper-function 'my/nix--flycheck-command-wrapper</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true"></a>		flycheck-executable-find 'my/nix--flycheck-executable-find))</span></code></pre></div>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true"></a>  (<span class="kw">setq</span> lsp-haskell-process-path-hie <span class="st">&quot;ghcide&quot;</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true"></a>		lsp-haskell-process-args-hie '()</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true"></a>		lsp-haskell-process-wrapper-function 'my/nix--lsp-haskell-wrapper))</span></code></pre></div>
 <p>Like for haskell-mode, the advanced configuration is focused on wrapping the various commands with <code>nix-shell-command</code> and <code>nix-shell-string</code>, with the wrapper being a pass-through if <code>(nix-current-sandbox)</code> returns <code>nil</code>.</p>
-<p>We make it so Flycheck talks to Ghcide inside the Nix environment.</p>
-<h1 id="flycheck">Flycheck</h1>
-<p>Finally, we configure flycheck itself. There is nothing tied to Nix or any other package we talked about but I still reproduced my config here for completeness.</p>
+<h2 id="flycheck">Flycheck</h2>
+<p>Finally, we configure <code>flycheck</code> itself. Like for <code>lsp-haskell</code>, we make it so <code>flycheck</code> can talk to Ghcide through Nix.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode commonlisp"><code class="sourceCode commonlisp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a>(<span class="kw">use-package</span> flycheck</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a>  :straight <span class="kw">t</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  :init</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a>  (add-hook 'after-init-hook 'global-flycheck-mode)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>  :config</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>  (<span class="kw">setq</span> flycheck-check-syntax-automatically '(save idle-change)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a>		flycheck-relevant-error-other-file-show <span class="kw">nil</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>  (add-to-list 'display-buffer-alist</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>			   `(,(rx bos <span class="st">&quot;*Flycheck errors*&quot;</span> eos)</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>				 (display-buffer-reuse-window</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>				  display-buffer-in-side-window)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>				 (side            . bottom)</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>				 (reusable-frames . visible)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>				 (window-height   . <span class="fl">0.33</span>))))</span></code></pre></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a>  :after nix-sandbox</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true"></a>  :init</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true"></a>  (add-hook 'after-init-hook 'global-flycheck-mode)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true"></a>  <span class="co">;; from https://github.com/travisbhartwell/nix-emacs#flycheck</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true"></a>  (<span class="kw">defun</span><span class="fu"> my/nix--flycheck-command-wrapper </span>(command)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true"></a>	(if-let ((sandbox (nix-current-sandbox)))</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true"></a>		(<span class="kw">apply</span> 'nix-shell-command (nix-current-sandbox) command)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true"></a>	  command))</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true"></a>  (<span class="kw">defun</span><span class="fu"> my/nix--flycheck-executable-find </span>(cmd)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true"></a>	(if-let ((sandbox (nix-current-sandbox)))</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true"></a>		(nix-executable-find (nix-current-sandbox) cmd)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true"></a>	  (flycheck-default-executable-find cmd)))</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true"></a>  :config</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true"></a>  (<span class="kw">setq</span> flycheck-check-syntax-automatically '(save idle-change)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true"></a>		flycheck-relevant-error-other-file-show <span class="kw">nil</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true"></a>		flycheck-command-wrapper-function 'my/nix--flycheck-command-wrapper</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true"></a>		flycheck-executable-find 'my/nix--flycheck-executable-find)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true"></a></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true"></a>  (add-to-list 'display-buffer-alist</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true"></a>			   `(,(rx bos <span class="st">&quot;*Flycheck errors*&quot;</span> eos)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true"></a>				 (display-buffer-reuse-window</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true"></a>				  display-buffer-in-side-window)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true"></a>				 (side            . bottom)</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true"></a>				 (reusable-frames . visible)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true"></a>				 (window-height   . <span class="fl">0.33</span>))))</span></code></pre></div>
+<h1 id="systemd-fu-for-emacs-daemon">Systemd-fu for Emacs Daemon</h1>
+<p>I will assume you use systemd to start emacs in daemon mode. If so, create or update the <code>~/.config/systemd/user/emacs.service</code> file with the same <code>NIX_*</code> and <code>PATH</code> <code>Environment</code> fields:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a><span class="kw">[Unit]</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="dt">Description</span><span class="ot">=</span><span class="st">Emacs text editor</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a><span class="dt">Documentation</span><span class="ot">=</span><span class="st">info:emacs man:emacs(</span><span class="dv">1</span><span class="st">) https://gnu.org/software/emacs/</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a><span class="kw">[Service]</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a><span class="dt">Type</span><span class="ot">=</span><span class="st">forking</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a><span class="dt">ExecStart</span><span class="ot">=</span><span class="st">/usr/bin/emacs --daemon</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a><span class="dt">ExecStop</span><span class="ot">=</span><span class="st">/usr/bin/emacsclient --eval &quot;(kill-emacs)&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">NIX_PROFILES=/nix/var/nix/profiles/</span><span class="kw">default</span><span class="st"> %h/.nix-profile</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">NIX_PATH=%h/.nix-defexpr/channels</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">PATH=%h/.nix-profile/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true"></a><span class="dt">Restart</span><span class="ot">=</span><span class="kw">on</span><span class="st">-failure</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true"></a><span class="kw">[Install]</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true"></a><span class="dt">WantedBy</span><span class="ot">=</span><span class="kw">default</span><span class="st">.target</span></span></code></pre></div>
 <h1 id="conclusion">Conclusion</h1>
-<p>That’s it, you should be well equipped for editing your site.</p>
+<p>That’s it, you should be well equipped for editing your site. Actually, everything we saw here is transferable to any Haskell code running through Nix.</p>
     </section>
 </article>
 
